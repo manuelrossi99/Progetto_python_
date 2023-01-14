@@ -57,9 +57,27 @@ antivax_docs_df.columns
 
 #merge and fill municipalities with no antivax docs with 0 
 data_df = data_df.merge(antivax_docs_df,how='left', left_on='municipality_id', right_on='municipality_id')
-data_df.fillna(0)
-data_df.info()
+data_df = data_df.fillna(0)
 
+
+urban_rural = pd.read_csv("urban_rural.csv", sep = ";")
+urban_rural_df = pd.DataFrame(urban_rural)
+urban_rural_df = urban_rural_df.drop("municipality_name", axis=1)
+data_df = data_df.merge(urban_rural_df,how='left', left_on='municipality_id', right_on='municipality_id')
+data_df = data_df.fillna(1) #since missing values are from Vienna wich is an urban city categoriesed as 1
+
+political_parties = pd.read_csv("nrw_2019_r.csv", sep =";", encoding = 'utf-8')
+political_parties_df = pd.DataFrame(political_parties)
+political_parties_df = political_parties_df.drop(["Gebietsname", "eligible_voters", "retrieved", "invalid", "valid"], axis= 1)
+new_list_to_merge = (data_df, political_parties_df)
+data_df = merge_df(new_list_to_merge, "municipality_id")
+#checking if all values are not fine:
+
+data_df.isnull().sum()
+data_df.isna().sum()
+
+#streamlit!!!!!!!!
+print(data_df.describe().T)
 
 
 
