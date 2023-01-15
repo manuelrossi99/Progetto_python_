@@ -78,16 +78,92 @@ data_df = merge_df(new_list_to_merge, "municipality_id")
 
 data_df.isnull().sum()
 data_df.isna().sum()
-print(data_df.dtypes) #checking if all columns are numeric 
+#print(data_df.dtypes) #checking if all columns are numeric 
 
 #streamlit!!!!!!!!
 #correlation matrix 
-corr_matrix = data_df.corr()
-sn.heatmap(corr_matrix, annot=True)
+#corr_matrix = data_df.corr()
+#sn.heatmap(corr_matrix, annot=True)
 #plt.show()
 
+data_df["dose_1_sh"]= data_df["dose_1"]/data_df["municipality_population"]
+data_df["dose_2_sh"]= data_df["dose_2"]/data_df["municipality_population"]
+data_df["dose_3_sh"]= data_df["dose_3"]/data_df["municipality_population"]
 
 
+mask_vaccine_skeptice = data_df["vaccine_skeptic"] > 0
+mask_not_vaccine_skeptice = data_df["vaccine_skeptic"] == 0 
+data_df_vaccine_skeptic = data_df[mask_vaccine_skeptice]
+data_df_not_vaccine_skeptic = data_df[mask_not_vaccine_skeptice]
+
+
+#plots
+mean_vaccine_dose1_vs = data_df_vaccine_skeptic["dose_1_sh"].mean()
+mean_vaccine_dose2_vs = data_df_vaccine_skeptic["dose_2_sh"].mean()
+mean_vaccine_dose3_vs = data_df_vaccine_skeptic["dose_3_sh"].mean()
+
+mean_vaccine_dose1_nvs = data_df_not_vaccine_skeptic["dose_1_sh"].mean()
+mean_vaccine_dose2_nvs = data_df_not_vaccine_skeptic["dose_2_sh"].mean()
+mean_vaccine_dose3_nvs = data_df_not_vaccine_skeptic["dose_3_sh"].mean()
+
+means_vs = [mean_vaccine_dose1_vs,mean_vaccine_dose2_vs,mean_vaccine_dose3_vs]
+means_nvs = [mean_vaccine_dose1_nvs,mean_vaccine_dose2_nvs,mean_vaccine_dose3_nvs]
+'''
+fig, ax = plt.subplots()
+index = np.arange(3)
+bar_width = 0.35
+opacity = 0.8
+
+rects1 = plt.bar(index,means_vs, bar_width,
+alpha=opacity,
+color='b',
+label='VaccineSkepticeDoc')
+
+rects2 = plt.bar(index + bar_width, means_nvs, bar_width,
+alpha=opacity,
+color='r',
+label='Other')
+
+plt.xlabel('Municipalities with or without Vs Doc')
+plt.ylabel('Vaccinationrates in percentage')
+plt.title('Vaccinationrates in Comparison for municipalities with or without Skeptical doc')
+plt.xticks(index + bar_width, ('Dose_1', 'Dose_2', 'Dose_3'))
+plt.legend()
+plt.show()
+'''
+##plot2
+
+mask_vaccine_skeptice_and_rural = (data_df["vaccine_skeptic"] > 1) & (data_df["type_urban_rural"] > 1)
+data_df_vaccine_skeptic_and_rural = data_df[mask_vaccine_skeptice_and_rural]
+
+mean_vaccine_dose1_vs_r = data_df_vaccine_skeptic_and_rural["dose_1_sh"].mean()
+mean_vaccine_dose2_vs_r = data_df_vaccine_skeptic_and_rural["dose_2_sh"].mean()
+mean_vaccine_dose3_vs_r = data_df_vaccine_skeptic_and_rural["dose_3_sh"].mean()
+
+means_vs_r = [mean_vaccine_dose1_vs_r, mean_vaccine_dose2_vs_r, mean_vaccine_dose3_vs_r]
+
+
+fig, ax = plt.subplots()
+index = np.arange(3)
+bar_width = 0.35
+opacity = 0.8
+
+rects1 = plt.bar(index,means_vs_r, bar_width,
+alpha=opacity,
+color='b',
+label='VaccineSkepticeDoc_rural')
+
+rects2 = plt.bar(index + bar_width, means_nvs, bar_width,
+alpha=opacity,
+color='g',
+label='Other')
+
+plt.xlabel('Rural municipalities with or without Vs Doc')
+plt.ylabel('Vaccinationrates in percentage')
+plt.title('Vaccinationrates in Comparison for rural municipalities with or without Skeptical doc ')
+plt.xticks(index + bar_width, ('Dose_1', 'Dose_2', 'Dose_3'))
+plt.legend()
+plt.show()
 
 
 
