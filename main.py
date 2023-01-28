@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import glob
 import seaborn as sn
 import statsmodels.api as sm
+import statsmodels.formula.api as smf
 
 
 # Start to create the Dataframe by using Data that can be imported and merged automaticly
@@ -45,7 +46,7 @@ data_df = merge_df(list_of_df_files, columns)
 
 # importing csv, which needed some more cleaning before merging
 covid_doses_municipalities = pd.read_csv(
-    "COVID19_vaccination_municipalities_doses_timeline.csv", sep=";", thousands=".", decimal="," )
+    "COVID19_vaccination_municipalities_doses_timeline.csv", sep=";", thousands=".", decimal=",")
 covid_doses_municipalities_df = pd.DataFrame(covid_doses_municipalities)
 # using only newest data
 mask_last_dates = covid_doses_municipalities_df["date"] == "2022-02-01"
@@ -62,7 +63,8 @@ new_list_to_merge = (data_df, covid_doses_municipalities_df)
 data_df = merge_df(new_list_to_merge, "municipality_id")
 # data_df.info()
 
-antivax_docs = pd.read_csv("antivax_docs.csv", sep=";", thousands=".", decimal=",")
+antivax_docs = pd.read_csv(
+    "antivax_docs.csv", sep=";", thousands=".", decimal=",")
 antivax_docs_df = pd.DataFrame(antivax_docs)
 antivax_docs_df = antivax_docs_df.groupby(
     "municipality_id", group_keys=False).sum().reset_index()
@@ -75,7 +77,8 @@ data_df = data_df.merge(antivax_docs_df, how='left',
 data_df = data_df.fillna(0)
 
 
-urban_rural = pd.read_csv("urban_rural.csv", sep=";", thousands=".", decimal=",")
+urban_rural = pd.read_csv("urban_rural.csv", sep=";",
+                          thousands=".", decimal=",")
 urban_rural_df = pd.DataFrame(urban_rural)
 urban_rural_df = urban_rural_df.drop("municipality_name", axis=1)
 data_df = data_df.merge(urban_rural_df, how='left',
@@ -83,7 +86,8 @@ data_df = data_df.merge(urban_rural_df, how='left',
 # since missing values are from Vienna wich is an urban city categoriesed as 1
 data_df = data_df.fillna(1)
 
-political_parties = pd.read_csv("nrw_2019_r.csv", sep=";", encoding='utf-8', thousands=",", decimal=".")
+political_parties = pd.read_csv(
+    "nrw_2019_r.csv", sep=";", encoding='utf-8', thousands=",", decimal=".")
 political_parties_df = pd.DataFrame(political_parties)
 political_parties_df = political_parties_df.drop(
     ["Gebietsname", "eligible_voters", "retrieved", "invalid", "valid"], axis=1)
@@ -91,16 +95,23 @@ new_list_to_merge = (data_df, political_parties_df)
 data_df = merge_df(new_list_to_merge, "municipality_id")
 
 
-
 # checking if all values are not fine:
 
 data_df.isnull().sum()
 data_df.isna().sum()
 # print(data_df.dtypes) #checking if all columns are numeric
-#pop_uni didnt read right so i have to change the object to float
-data_df["sh_pop_uni"] = data_df["sh_pop_uni"].apply(pd.to_numeric, errors='coerce')
+# pop_uni didnt read right so i have to change the object to float
+data_df["sh_pop_uni"] = data_df["sh_pop_uni"].apply(
+    pd.to_numeric, errors='coerce')
 data_df["pop_uni"] = data_df["pop_uni"].apply(pd.to_numeric, errors='coerce')
 
+# 2 navalues in sh_pop_uni and pop_uni
+# to not alter result filled with the mean
+mean_pop_uni = data_df["pop_uni"].mean()
+mean_sh_pop_uni_ = data_df["sh_pop_uni"].mean()
+
+data_df["sh_pop_uni"] = data_df["sh_pop_uni"].fillna(mean_sh_pop_uni_)
+data_df["pop_uni"] = data_df["pop_uni"].fillna(mean_pop_uni)
 
 # streamlit!!!!!!!!
 # correlation matrix
@@ -193,25 +204,33 @@ plt.show()
 '''
 
 
+# Models
+y = data_df["dose_2"]
+x0 = data_df["pensions"]
+x1 = data_df["vaccine_skeptic"]
+x2 = data_df["FPOE_per"]
+x3 = data_df["sh_pop_0_14"]
+x4 = data_df["sh_pop_15_29"]
+x5 = data_df["sh_pop_45_59"]
+x6 = data_df["sh_pop_60_74"]
+x7 = data_df["sh_pop_75_99"]
+x8 = data_df["sh_pop_foreign"]
+x9 = data_df["sh_pop_lehre"]
+x10 = data_df["sh_pop_pflichtschule"]
+x11 = data_df["sh_pop_uni"]
+x12 = data_df["salaries"]
+x13 = data_df["type_urban_rural"]
+x14 = data_df["sh_pop_30_44"]
+x = [x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14]
 
 
-'''
-#Models
-y =  data_df["dose_2"].astype(int)
-x = np.array([data_df["pensions"], data_df["vaccine_skeptic"], data_df["FPOE_per"], data_df["sh_pop_0_14"],
-     data_df["sh_pop_15_29"], data_df["sh_pop_30_44"], data_df["sh_pop_45_59"], data_df["sh_pop_60_74"],
-     data_df["sh_pop_75_99"], data_df["sh_pop_foreign"], data_df["sh_pop_lehre"],
-     data_df["sh_pop_pflichtschule"], data_df["sh_pop_uni"], data_df["salaries"],
-     data_df["type_urban_rural"]])
+# model = sm.OLS(y,x)
+# results = model.fit()
+# print(results.summary())
 
-model = sm.OLS(y,x.astype(float))
+result = smf.ols(
+    formula='y ~ x0 + x1 + x2 + x3 + x4 + x5 + x6+ x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14', data=data_df).fit()
 
-results = model.fit()
-#print(results.summary())
-'''
-
-#print(data_df["dose_2"])
+print(result.summary())
 
 
-
-print(data_df.info())
