@@ -6,7 +6,7 @@ import glob
 import seaborn as sn
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-import sklearn as sk 
+import sklearn as sk
 
 # Start to create the Dataframe by using Data that can be imported and merged automaticly
 path = "Data"
@@ -114,12 +114,16 @@ mean_sh_pop_uni_ = data_df["sh_pop_uni"].mean()
 data_df["sh_pop_uni"] = data_df["sh_pop_uni"].fillna(mean_sh_pop_uni_)
 data_df["pop_uni"] = data_df["pop_uni"].fillna(mean_pop_uni)
 
-#setting setting excess skeptic doc in municpalities to 1 to creat a 
-#boolean with either 0,1 for a municipality with or withoutskeptic
-data_df.loc[data_df['vaccine_skeptic'] > 0, 'vaccine_skeptic'] = 1
- 
+# setting setting excess skeptic doc in municpalities to 1 to creat a
+# boolean with either 0,1 for a municipality with or withoutskeptic
+# data_df.loc[data_df['vaccine_skeptic'] > 0, 'vaccine_skeptic'] = 1
+
+# instead of above create a share of vaccine skeptic doc per population
+data_df["sh_vaccine_skeptic"] = data_df["vaccine_skeptic"] / \
+    data_df["municipality_population"]
+
 # streamlit!!!!!!!!
-#correlation matrix
+# correlation matrix
 '''
 to_drop = ["municipality_id","municipality_name","sh_pop_0_14","sh_pop_15_29","sh_pop_30_44",
             "sh_pop_45_59","sh_pop_60_74","sh_pop_75_99","sh_pop_bms_bhs", "sh_pop_foreign",
@@ -131,7 +135,7 @@ corr_matrix = data_df_copy_corr.corr()
 sn.heatmap(corr_matrix, cmap="Blues", annot=False, vmax=1, vmin=-1, linewidths= 0.01, linecolor= "black")
 plt.show()
 '''
-#_____________________________________
+# _____________________________________
 
 data_df["dose_1_sh"] = data_df["dose_1"]/data_df["municipality_population"]
 data_df["dose_2_sh"] = data_df["dose_2"]/data_df["municipality_population"]
@@ -158,7 +162,7 @@ means_vs = [mean_vaccine_dose1_vs,
 means_nvs = [mean_vaccine_dose1_nvs,
              mean_vaccine_dose2_nvs, mean_vaccine_dose3_nvs]
 
-#plot1
+# plot1
 '''
 fig, ax = plt.subplots()
 index = np.arange(3)
@@ -182,18 +186,20 @@ plt.xticks(index + bar_width, ('Dose_1', 'Dose_2', 'Dose_3'))
 plt.legend()
 #plt.show()
 '''
-#____________________________________________________________________
+# ____________________________________________________________________
 
 # plot2
-'''
-mask_vaccine_skeptice_and_rural = (data_df["vaccine_skeptic"] > 1) & (data_df["type_urban_rural"] > 1)
+
+mask_vaccine_skeptice_and_rural = (data_df["vaccine_skeptic"] > 1) & (
+    data_df["type_urban_rural"] > 1)
 data_df_vaccine_skeptic_and_rural = data_df[mask_vaccine_skeptice_and_rural]
 
 mean_vaccine_dose1_vs_r = data_df_vaccine_skeptic_and_rural["dose_1_sh"].mean()
 mean_vaccine_dose2_vs_r = data_df_vaccine_skeptic_and_rural["dose_2_sh"].mean()
 mean_vaccine_dose3_vs_r = data_df_vaccine_skeptic_and_rural["dose_3_sh"].mean()
 
-means_vs_r = [mean_vaccine_dose1_vs_r, mean_vaccine_dose2_vs_r, mean_vaccine_dose3_vs_r]
+means_vs_r = [mean_vaccine_dose1_vs_r,
+              mean_vaccine_dose2_vs_r, mean_vaccine_dose3_vs_r]
 
 
 fig, ax = plt.subplots()
@@ -201,24 +207,24 @@ index = np.arange(3)
 bar_width = 0.35
 opacity = 0.8
 
-rects1 = plt.bar(index,means_vs_r, bar_width,
-alpha=opacity,
-color='b',
-label='VaccineSkepticeDoc_rural')
+rects1 = plt.bar(index, means_vs_r, bar_width,
+                 alpha=opacity,
+                 color='b',
+                 label='VaccineSkepticeDoc_rural')
 
 rects2 = plt.bar(index + bar_width, means_nvs, bar_width,
-alpha=opacity,
-color='lightblue',
-label='Other')
+                 alpha=opacity,
+                 color='lightblue',
+                 label='Other')
 
 plt.xlabel('Rural municipalities with or without Vs Doc')
 plt.ylabel('Vaccinationrates in percentage')
 plt.title('Vaccinationrates in Comparison for rural municipalities with or without Skeptical doc ')
 plt.xticks(index + bar_width, ('Dose_1', 'Dose_2', 'Dose_3'))
 plt.legend()
-plt.show()
-'''
-#_________________________________________________________________________
+# plt.show()
+
+# _________________________________________________________________________
 
 '''
 #plot 3 
@@ -240,19 +246,17 @@ plt.show()
 '''
 
 
-
-
-
 mask_rural = data_df["type_urban_rural"] > 1
-data_df['skeptic_and_rural'] = np.select([mask_vaccine_skeptice, mask_rural], 
-                            [data_df['vaccine_skeptic'], data_df['type_urban_rural']], 
-                            default= 0)
+data_df['skeptic_and_rural'] = np.select([mask_vaccine_skeptice, mask_rural],
+                                         [data_df['vaccine_skeptic'],
+                                             data_df['type_urban_rural']],
+                                         default=0)
 
 
 # Models
 vaccination_rate = data_df["dose_1_sh"]
 pensions = data_df["pensions"]
-vaccine_skeptic = data_df["vaccine_skeptic"]
+sh_vaccine_skeptic = data_df["sh_vaccine_skeptic"]
 vaccine_skeptic_and_rural = data_df["skeptic_and_rural"]
 skeptic_politcal_party = data_df["FPOE_per"]
 sh_0_14 = data_df["sh_pop_0_14"]
@@ -274,14 +278,10 @@ urban_rural = data_df["type_urban_rural"]
 # print(results.summary())
 
 result = smf.ols(
-    formula='''vaccination_rate ~ vaccine_skeptic + vaccine_skeptic_and_rural + pensions
+    formula='''vaccination_rate ~ sh_vaccine_skeptic + vaccine_skeptic_and_rural + pensions
      + skeptic_politcal_party + sh_0_14 + sh_15_29 + sh_30_44 + sh_45_59 + sh_60_74 + sh_75_99
-     + sh_forgein + sh_bms_bhs + sh_lehre + sh_pflichtschule + sh_uni + salaries + urban_rural ''',
+     + sh_forgein + sh_bms_bhs + sh_lehre + sh_pflichtschule + sh_uni + salaries + urban_rural''',
     data=data_df).fit()
 
-print(result.summary())
-
-
-
-
-
+#print(result.summary())
+print(data_df["skeptic_and_rural_right"])
