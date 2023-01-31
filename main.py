@@ -11,6 +11,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 
+st.header("Austrian municipalities and covid vaccination")
+st.write("This project is based on the dataset of the publication: Vaccine-Skeptic Physicians and COVID-19 Vaccination Rates. The primarly focus was to get introduced to working with a dataset on Python. Unfortunatly some data was only available for the pubblication so the resualts are not the same.")
+st.subheader("Abstract of the paper")
+st.write("What is the role of general practitioners (GPs) in supporting or hindering public health efforts? We investigate the influence of vaccine-skeptic GPs on their patients' decisions to get a COVID-19 vaccination. We identify vaccine-skeptic GPs from the signatories of an open letter in which 199 Austrian physicians expressed their skepticism about COVID-19 vaccines. We examine small rural municipalities where patients choose a GP primarily based on geographic proximity. These vaccine-skeptic GPs reduced the vaccination rate by 5.6 percentage points. This estimate implies that they discouraged 7.9% of the vaccinable population. The effect appears to stem from discouragement rather than from rationing access to the vaccine.")
 # Start to create the Dataframe by using Data that can be imported and merged automaticly
 path = "Data"
 file_path = glob.glob(path + "/*.csv")
@@ -22,18 +26,15 @@ list_of_df_files = list(list_of_df_files)
 # print(list_of_df_files)
 
 # Checking if imports went well
-'''
-for i in list_of_df_files:
-  i.info()
-'''
+
+# for i in list_of_df_files:
+# i.info()
 
 # without endcoding some more cleaning is necessary
-'''
-for i in list_of_df_files:
-  i.columns= i.columns.str.replace('[ï»¿]', '')
-'''
-# creating a function to merge my dataframes
+# for i in list_of_df_files:
+#   i.columns= i.columns.str.replace('[ï»¿]', '')
 
+# creating a function to merge my dataframes
 
 def merge_df(dataframes, column_names):
     result = dataframes[0]
@@ -72,7 +73,6 @@ antivax_docs = pd.read_csv(
 antivax_docs_df = pd.DataFrame(antivax_docs)
 antivax_docs_df = antivax_docs_df.groupby(
     "municipality_id", group_keys=False).sum().reset_index()
-
 
 # merge and fill municipalities with no antivax docs with 0
 data_df = data_df.merge(antivax_docs_df, how='left',
@@ -120,27 +120,6 @@ data_df["pop_uni"] = data_df["pop_uni"].fillna(mean_pop_uni)
 # boolean with either 0,1 for a municipality with or withoutskeptic
 # data_df.loc[data_df['vaccine_skeptic'] > 0, 'vaccine_skeptic'] = 1
 
-# instead of above create a share of vaccine skeptic doc per population
-data_df["sh_vaccine_skeptic"] = data_df["vaccine_skeptic"] / \
-    data_df["municipality_population"]
-
-# streamlit!!!!!!!!
-# correlation matrix
-'''
-to_drop = ["municipality_id","municipality_name","sh_pop_0_14","sh_pop_15_29","sh_pop_30_44",
-            "sh_pop_45_59","sh_pop_60_74","sh_pop_75_99","sh_pop_bms_bhs", "sh_pop_foreign",
-            "sh_pop_lehre","sh_pop_pflichtschule","sh_pop_uni","salaries"
-            ,"dose_1","dose_3","FPOE"]
-data_df_copy_corr = data_df.copy()
-data_df_copy_corr = data_df_copy_corr.drop(to_drop,axis=1)
-corr_matrix = data_df_copy_corr.corr()
-sn.heatmap(corr_matrix, cmap="Blues", annot=True, vmax=1,
-           vmin=-1, linewidths= 0.01, linecolor= "black")
-fig.suptitle('Correlation Matrix for numeric Variabels of the Dataset')
-plt.show()
-'''
-# _____________________________________
-
 data_df["dose_1_sh"] = data_df["dose_1"]/data_df["municipality_population"]
 data_df["dose_2_sh"] = data_df["dose_2"]/data_df["municipality_population"]
 data_df["dose_3_sh"] = data_df["dose_3"]/data_df["municipality_population"]
@@ -152,7 +131,10 @@ data_df_vaccine_skeptic = data_df[mask_vaccine_skeptice]
 data_df_not_vaccine_skeptic = data_df[mask_not_vaccine_skeptice]
 
 
-# plots
+# instead of above create a share of vaccine skeptic doc per population
+data_df["sh_vaccine_skeptic"] = data_df["vaccine_skeptic"] / \
+    data_df["municipality_population"]
+
 mean_vaccine_dose1_vs = data_df_vaccine_skeptic["dose_1_sh"].mean()
 mean_vaccine_dose2_vs = data_df_vaccine_skeptic["dose_2_sh"].mean()
 mean_vaccine_dose3_vs = data_df_vaccine_skeptic["dose_3_sh"].mean()
@@ -167,34 +149,6 @@ means_nvs = [mean_vaccine_dose1_nvs,
              mean_vaccine_dose2_nvs, mean_vaccine_dose3_nvs]
 
 data_df = data_df.rename(columns={"pop_40_44": "pop_30_44"})
-'''
-# plot1
-
-fig, ax = plt.subplots()
-index = np.arange(3)
-bar_width = 0.35
-opacity = 0.8
-
-rects1 = plt.bar(index,means_vs, bar_width,
-alpha=opacity,
-color='b',
-label='VaccineSkepticeDoc')
-
-rects2 = plt.bar(index + bar_width, means_nvs, bar_width,
-alpha=opacity,
-color='lightblue',
-label='Other')
-
-plt.xlabel('Municipalities with or without Vs Doc')
-plt.ylabel('Vaccinationrates in percentage')
-plt.title('Vaccinationrates in Comparison for municipalities with or without Skeptical doc')
-plt.xticks(index + bar_width, ('Dose_1', 'Dose_2', 'Dose_3'))
-plt.legend()
-#plt.show()
-
-# ____________________________________________________________________
-
-# plot2
 
 mask_vaccine_skeptice_and_rural = (data_df["vaccine_skeptic"] > 1) & (
     data_df["type_urban_rural"] > 1)
@@ -208,74 +162,126 @@ means_vs_r = [mean_vaccine_dose1_vs_r,
               mean_vaccine_dose2_vs_r, mean_vaccine_dose3_vs_r]
 
 
-fig, ax = plt.subplots()
-index = np.arange(3)
-bar_width = 0.35
-opacity = 0.8
-
-rects1 = plt.bar(index, means_vs_r, bar_width,
-                 alpha=opacity,
-                 color='b',
-                 label='VaccineSkepticeDoc_rural')
-
-rects2 = plt.bar(index + bar_width, means_nvs, bar_width,
-                 alpha=opacity,
-                 color='lightblue',
-                 label='Other')
-
-plt.xlabel('Rural municipalities with or without Vs Doc')
-plt.ylabel('Vaccinationrates in percentage')
-plt.title('Vaccinationrates in Comparison for rural municipalities with vs without Skeptical doc ')
-plt.xticks(index + bar_width, ('Dose_1', 'Dose_2', 'Dose_3'))
-plt.legend()
-#plt.show()
-
-# _________________________________________________________________________
+# streamlit!!!!!!!!
+st.subheader("Intersting Plots")
+# correlation matrix
+plots = st.selectbox("Select plots:", ("Correlation Matrix", "Vaccinationrates for municipalities with or without skeptical doc in comparison",
+                     "Population Distribution for Austrian Municipalities", "Mean Instrucition Level of Austrian Population", "Age Distribution for Austrian Municipalities", "Boxplot of salaries and pensions"))
+if plots == "Correlation Matrix":
+    st.write("Correlation Matrix")
+    fig = plt.figure(figsize=(14, 12))
+    to_drop = ["municipality_id", "municipality_name", "sh_pop_0_14", "sh_pop_15_29", "sh_pop_30_44",
+               "sh_pop_45_59", "sh_pop_60_74", "sh_pop_75_99", "sh_pop_bms_bhs", "sh_pop_foreign",
+               "sh_pop_lehre", "sh_pop_pflichtschule", "sh_pop_uni", "salaries", "dose_1", "dose_2", "dose_3", "FPOE", "dose_2_sh", "dose_3_sh"]
+    data_df_copy_corr = data_df.copy()
+    data_df_copy_corr = data_df_copy_corr.drop(to_drop, axis=1)
+    corr_matrix = data_df_copy_corr.corr()
+    sn.heatmap(corr_matrix, cmap="Blues", annot=True, vmax=1,
+               vmin=-1, linewidths=0.01, linecolor="black", fmt=".2f").set_title('Correlation Matrix for numeric Variabels of the Dataset')
+    st.pyplot(fig)
 
 
-#plot 3
-sn.set_style('darkgrid')
-fig.suptitle('Population Distribution for Austrian Municipalities')
-sn.histplot(data_df["municipality_population"], log_scale=True)
-#plt.show()
+# plots
 
-'''
-'''
-#plot4
-mean_pop_lehre = data_df["pop_lehre"].mean()
-mean_pop_pflichtschule = data_df["pop_pflichtschule"].mean()
-mean_pop_bms_bhs = data_df["pop_bms_bhs"].mean()
-y = [mean_pop_bms_bhs, mean_pop_lehre , mean_pop_pflichtschule, mean_pop_uni]
-mylabels=["bms_bhs", "lehre", "pflichtschule", "uni"]
-colors = ["Skyblue","LightBlue", "LightGrey", "Grey"]
-plt.title('Mean Instrucition Level of Austiran Population')
-plt.pie(y, labels = mylabels, startangle=90, colors= colors,
-        wedgeprops = {'linewidth': 0.5, 'edgecolor' : "black" })
-plt.show()
-'''
+# Plot1
+if plots == "Vaccinationrates for municipalities with or without skeptical doc in comparison":
+    col_1, col_2 = st.columns(2)
+    with col_1:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        index = np.arange(3)
+        bar_width = 0.35
+        opacity = 0.8
 
-'''
-#plot5
-fig, axes = plt.subplots(2, 3, figsize=(
-    15, 5), sharey=True, constrained_layout = True)
-fig.suptitle('Population Distribution for each age Group')
-sn.set_style('darkgrid')
-sn.histplot(data_df["pop_0_14"], log_scale=True, ax=axes[0,0])
-sn.histplot(data_df["pop_15_29"], log_scale=True, ax=axes[0,1])
-sn.histplot(data_df["pop_30_44"], log_scale=True, ax=axes[0,2])
-sn.histplot(data_df["pop_45_59"], log_scale=True, ax=axes[1,0])
-sn.histplot(data_df["pop_60_74"], log_scale=True, ax=axes[1,1])
-sn.histplot(data_df["pop_75_99"], log_scale=True, ax=axes[1,2])
-plt.show()
-'''
-# ____________________________________________
+        rects1 = plt.bar(index, means_vs, bar_width,
+                         alpha=opacity,
+                         color='b',
+                         label='VaccineSkepticeDoc')
+
+        rects2 = plt.bar(index + bar_width, means_nvs, bar_width,
+                         alpha=opacity,
+                         color='lightblue',
+                         label='Other')
+
+        plt.xlabel('Municipalities with or without Vs Doc')
+        plt.ylabel('Vaccinationrates in percentage')
+        plt.title(
+            'Vaccinationrates in Comparison for municipalities with or without Skeptical doc')
+        plt.xticks(index + bar_width, ('Dose_1', 'Dose_2', 'Dose_3'))
+        plt.legend()
+        st.pyplot(fig)
+
+    with col_2:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        index = np.arange(3)
+        bar_width = 0.35
+        opacity = 0.8
+
+        rects1 = plt.bar(index, means_vs_r, bar_width,
+                         alpha=opacity,
+                         color='b',
+                         label='VaccineSkepticeDoc_rural')
+
+        rects2 = plt.bar(index + bar_width, means_nvs, bar_width,
+                         alpha=opacity,
+                         color='lightblue',
+                         label='Other')
+
+        plt.xlabel('Rural municipalities with or without Vs Doc')
+        plt.ylabel('Vaccinationrates in percentage')
+        plt.title(
+            'Vaccinationrates in Comparison for rural municipalities with vs without Skeptical doc ')
+        plt.xticks(index + bar_width, ('Dose_1', 'Dose_2', 'Dose_3'))
+        plt.legend()
+        plt.show()
+        st.pyplot(fig)
+
+# plot 3
+if plots == "Population Distribution for Austrian Municipalities":
+    fig = plt.figure(figsize=(10, 8))
+    sn.set_style('darkgrid')
+    sn.histplot(data_df["municipality_population"], log_scale=True).set_title(
+        'Population Distribution for Austrian Municipalities')
+    st.pyplot(fig)
+
+# plot4
+if plots == "Mean Instrucition Level of Austrian Population":
+    fig = plt.figure(figsize=(10, 8))
+    mean_pop_lehre = data_df["pop_lehre"].mean()
+    mean_pop_pflichtschule = data_df["pop_pflichtschule"].mean()
+    mean_pop_bms_bhs = data_df["pop_bms_bhs"].mean()
+    y = [mean_pop_bms_bhs, mean_pop_lehre,
+         mean_pop_pflichtschule, mean_pop_uni]
+    mylabels = ["bms_bhs", "lehre", "pflichtschule", "uni"]
+    colors = ["Skyblue", "LightBlue", "LightGrey", "Grey"]
+    plt.title('Mean Instrucition Level of Austiran Population',
+              fontweight="bold")
+    plt.pie(y, labels=mylabels, startangle=90, colors=colors,
+            wedgeprops={'linewidth': 0.5, 'edgecolor': "black"}, autopct='%.2f%%')
+    st.pyplot(fig)
+
+# plot5
+if plots == "Age Distribution for Austrian Municipalities":
+    fig, axes = plt.subplots(3, 2, figsize=(
+        10, 8), sharey=True, constrained_layout=True)
+    fig.suptitle('Population Distribution for each age Group',
+                 fontweight="bold")
+    sn.set_style('darkgrid')
+    sn.histplot(data_df["pop_0_14"], log_scale=True, ax=axes[0, 0])
+    sn.histplot(data_df["pop_15_29"], log_scale=True, ax=axes[0, 1])
+    sn.histplot(data_df["pop_30_44"], log_scale=True, ax=axes[1, 0])
+    sn.histplot(data_df["pop_45_59"], log_scale=True, ax=axes[1, 1])
+    sn.histplot(data_df["pop_60_74"], log_scale=True, ax=axes[2, 0])
+    sn.histplot(data_df["pop_75_99"], log_scale=True, ax=axes[2, 1])
+    st.pyplot(fig)
 
 # plot 6
-'''
-ax = sn.boxplot(data=data_df[["salaries", "pensions"]], orient="h")
-ax.set(xlabel='Salaries and Pensions in 100 €',
-       title = "Boxplots for Pensions and Salaries")
-plt.show()
+if plots == "Boxplot of salaries and pensions":
+    fig = plt.figure(figsize=(14, 8))
+    ax = sn.boxplot(
+        data=data_df[["salaries", "pensions"]], orient="h", palette="Blues")
+    ax.set(xlabel=' Yearly salaries and pensions in 1000 €',
+           title="Boxplots for Pensions and Salaries")
+    st.pyplot(fig)
 
 mask_rural = data_df["type_urban_rural"] > 1
 data_df['skeptic_and_rural'] = np.select([mask_vaccine_skeptice, mask_rural],
@@ -283,7 +289,6 @@ data_df['skeptic_and_rural'] = np.select([mask_vaccine_skeptice, mask_rural],
                                              data_df['type_urban_rural']],
                                          default=0)
 
-'''
 
 # Models
 vaccination_rate = data_df["dose_1_sh"]
@@ -315,26 +320,33 @@ result = smf.ols(
      + sh_forgein + sh_bms_bhs + sh_lehre + sh_pflichtschule + sh_uni + salaries + urban_rural''',
     data=data_df).fit()
 
-# print(result.summary())
+st.subheader("Models")
+models_choice = st.selectbox(
+    "Select the model:", ("OLS with coefficents", "Linear Regression"))
+if models_choice == "OLS with coefficents":
+    st.write(result.summary())
 
+if models_choice == "Linear Regression":
 
-st.header('Linear Regression')
-with st.expander('Show model'):
     y = vaccination_rate
 
     model = LinearRegression()
 
-    choices = st.multiselect('Select the features to construct the model:', ["sh_vaccine_skeptic", "pensions", "FPOE_per", "sh_pop_0_14", "sh_pop_15_29", "sh_pop_30_44",
-                             "sh_pop_45_59", "sh_pop_60_74", "sh_pop_75_99", "sh_pop_foreign", "sh_pop_bms_bhs", "sh_pop_lehre", "sh_pop_pflichtschule", "sh_pop_uni", "salaries", "type_urban_rural"])
-    test_size = st.slider('Test size: ', min_value=0.1,
+    variable_choices = st.multiselect('Select the variables to construct the model:', ["sh_vaccine_skeptic",
+                                                                                       "pensions", "FPOE_per", "sh_pop_0_14", "sh_pop_15_29", "sh_pop_30_44",
+                                                                                       "sh_pop_45_59", "sh_pop_60_74", "sh_pop_75_99", "sh_pop_foreign",
+                                                                                       "sh_pop_bms_bhs", "sh_pop_lehre", "sh_pop_pflichtschule", "sh_pop_uni",
+                                                                                       "salaries", "type_urban_rural"])
+    test_size = st.slider('Choose test size: ', min_value=0.1,
                           max_value=0.9, step=0.1)
-    if len(choices) > 0 and st.button('RUN MODEL'):
-        with st.spinner('Training...'):
-            x = data_df[choices]
+    if len(variable_choices) > 0 and st.button('Run Model'):
+        with st.spinner('Loading'):
+            x = data_df[variable_choices]
             x_train, x_test, y_train, y_test = train_test_split(
                 x, y, test_size=test_size, random_state=2)
-            model.fit(x_train[choices], y_train)
-            x_test = x_test[choices].to_numpy().reshape(-1, len(choices))
+            model.fit(x_train[variable_choices], y_train)
+            x_test = x_test[variable_choices].to_numpy(
+            ).reshape(-1, len(variable_choices))
             y_pred = model.predict(x_test)
-            acc = r2_score(y_test, y_pred)
-            st.write("Accuracy:", acc)
+            r_squared = r2_score(y_test, y_pred)
+            st.write("R-squared:", r_squared)
