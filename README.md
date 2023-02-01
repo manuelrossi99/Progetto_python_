@@ -1,1 +1,2 @@
 # project
+Remark this is a univeristy project to get introduced to python. The results of the publication are very different, since not all data was accessable and not the same statistical tools were used.
