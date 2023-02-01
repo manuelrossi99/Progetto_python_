@@ -11,10 +11,12 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 
-st.header("Austrian municipalities and covid vaccination")
-st.write("This project is based on the dataset of the publication: Vaccine-Skeptic Physicians and COVID-19 Vaccination Rates. The primarly focus was to get introduced to working with a dataset on Python. Unfortunatly some data was only available for the pubblication so the resualts are not the same.")
+st.header("Austrian municipalities and COVID vaccination")
+st.write("This project is based on the dataset of the publication: Vaccine-Skeptic Physicians and COVID-19 Vaccination Rates. The primarly focus was to get introduced to working with a dataset on Python. Unfortunatly some data was only available for the publication so the resualts are not the same.")
 st.subheader("Abstract of the paper")
 st.write("What is the role of general practitioners (GPs) in supporting or hindering public health efforts? We investigate the influence of vaccine-skeptic GPs on their patients' decisions to get a COVID-19 vaccination. We identify vaccine-skeptic GPs from the signatories of an open letter in which 199 Austrian physicians expressed their skepticism about COVID-19 vaccines. We examine small rural municipalities where patients choose a GP primarily based on geographic proximity. These vaccine-skeptic GPs reduced the vaccination rate by 5.6 percentage points. This estimate implies that they discouraged 7.9% of the vaccinable population. The effect appears to stem from discouragement rather than from rationing access to the vaccine.")
+
+
 # Start to create the Dataframe by using Data that can be imported and merged automaticly
 path = "Data"
 file_path = glob.glob(path + "/*.csv")
@@ -35,6 +37,7 @@ list_of_df_files = list(list_of_df_files)
 #   i.columns= i.columns.str.replace('[ï»¿]', '')
 
 # creating a function to merge my dataframes
+
 
 def merge_df(dataframes, column_names):
     result = dataframes[0]
@@ -68,6 +71,8 @@ new_list_to_merge = (data_df, covid_doses_municipalities_df)
 data_df = merge_df(new_list_to_merge, "municipality_id")
 # data_df.info()
 
+#importing csv which can not can automated 
+#summing up all skeptic docs in a municipiality
 antivax_docs = pd.read_csv(
     "antivax_docs.csv", sep=";", thousands=".", decimal=",")
 antivax_docs_df = pd.DataFrame(antivax_docs)
@@ -98,7 +103,7 @@ new_list_to_merge = (data_df, political_parties_df)
 data_df = merge_df(new_list_to_merge, "municipality_id")
 
 
-# checking if all values are not fine:
+# checking if all values are fine:
 
 data_df.isnull().sum()
 data_df.isna().sum()
@@ -120,11 +125,12 @@ data_df["pop_uni"] = data_df["pop_uni"].fillna(mean_pop_uni)
 # boolean with either 0,1 for a municipality with or withoutskeptic
 # data_df.loc[data_df['vaccine_skeptic'] > 0, 'vaccine_skeptic'] = 1
 
+#creating a value in percantage of the vaccinatiorate in a municipality
 data_df["dose_1_sh"] = data_df["dose_1"]/data_df["municipality_population"]
 data_df["dose_2_sh"] = data_df["dose_2"]/data_df["municipality_population"]
 data_df["dose_3_sh"] = data_df["dose_3"]/data_df["municipality_population"]
 
-
+#crate a mask for later plots to compare municipalities with our without skeptic doc
 mask_vaccine_skeptice = data_df["vaccine_skeptic"] > 0
 mask_not_vaccine_skeptice = data_df["vaccine_skeptic"] == 0
 data_df_vaccine_skeptic = data_df[mask_vaccine_skeptice]
@@ -135,6 +141,7 @@ data_df_not_vaccine_skeptic = data_df[mask_not_vaccine_skeptice]
 data_df["sh_vaccine_skeptic"] = data_df["vaccine_skeptic"] / \
     data_df["municipality_population"]
 
+#create some more variables fot the plots
 mean_vaccine_dose1_vs = data_df_vaccine_skeptic["dose_1_sh"].mean()
 mean_vaccine_dose2_vs = data_df_vaccine_skeptic["dose_2_sh"].mean()
 mean_vaccine_dose3_vs = data_df_vaccine_skeptic["dose_3_sh"].mean()
@@ -148,8 +155,10 @@ means_vs = [mean_vaccine_dose1_vs,
 means_nvs = [mean_vaccine_dose1_nvs,
              mean_vaccine_dose2_nvs, mean_vaccine_dose3_nvs]
 
+#a column was wrongly defined
 data_df = data_df.rename(columns={"pop_40_44": "pop_30_44"})
 
+#a mask to identify rural municipalities with a skeptic doc
 mask_vaccine_skeptice_and_rural = (data_df["vaccine_skeptic"] > 1) & (
     data_df["type_urban_rural"] > 1)
 data_df_vaccine_skeptic_and_rural = data_df[mask_vaccine_skeptice_and_rural]
@@ -161,12 +170,24 @@ mean_vaccine_dose3_vs_r = data_df_vaccine_skeptic_and_rural["dose_3_sh"].mean()
 means_vs_r = [mean_vaccine_dose1_vs_r,
               mean_vaccine_dose2_vs_r, mean_vaccine_dose3_vs_r]
 
+mean_sh_pop_fpoe_vs = data_df_vaccine_skeptic["FPOE_per"].mean()
+mean_sh_pop_fpoe_not_vs = data_df_not_vaccine_skeptic["FPOE_per"].mean()
 
-# streamlit!!!!!!!!
+# exporting clean dataset
+# data_df.to_csv("data_df_clean")
+
+st.subheader("The Dataframe")
+if st.button("Show Dataframe"):
+    st.write(data_df)
+if st.button("Show descriptive Statistic"):
+    st.write(data_df.describe().T)
+
+
 st.subheader("Intersting Plots")
 # correlation matrix
 plots = st.selectbox("Select plots:", ("Correlation Matrix", "Vaccinationrates for municipalities with or without skeptical doc in comparison",
-                     "Population Distribution for Austrian Municipalities", "Mean Instrucition Level of Austrian Population", "Age Distribution for Austrian Municipalities", "Boxplot of salaries and pensions"))
+                     "Population Distribution for Austrian Municipalities", "Mean Instrucition Level of Austrian Population", "Age Distribution for Austrian Municipalities", 
+                     "Boxplot of salaries and pensions", "Vaccine skeptic political party percentage votes in comparison"))
 if plots == "Correlation Matrix":
     st.write("Correlation Matrix")
     fig = plt.figure(figsize=(14, 12))
@@ -211,7 +232,7 @@ if plots == "Vaccinationrates for municipalities with or without skeptical doc i
         st.pyplot(fig)
 
     with col_2:
-        fig, ax = plt.subplots(figsize=(8, 6))
+        fig, ax = plt.subplots(figsize=(9, 6.5))
         index = np.arange(3)
         bar_width = 0.35
         opacity = 0.8
@@ -283,6 +304,31 @@ if plots == "Boxplot of salaries and pensions":
            title="Boxplots for Pensions and Salaries")
     st.pyplot(fig)
 
+#plot 7
+if plots == "Vaccine skeptic political party percentage votes in comparison":
+    fig, ax = plt.subplots(figsize=(7, 5))
+    index = np.arange(1)
+    bar_width = 0.1
+    opacity = 0.8
+
+    rects1 = plt.bar(index, mean_sh_pop_fpoe_vs, bar_width,
+                            alpha=opacity,
+                            color='b',
+                            label='VaccineSkepticeDoc')
+
+    rects2 = plt.bar(index + bar_width, mean_sh_pop_fpoe_not_vs, bar_width,
+                            alpha=opacity,
+                            color='lightblue',
+                            label='Other')
+
+    plt.xlabel('Percentage of mean votes for vaccine skeptic political party with or without Vs Doc')
+    plt.ylabel('Votes in percantage')
+    plt.xticks(index + bar_width, ())
+    plt.title('Percentage of mean votes for vaccine skeptic political party with or without Vs Doc')
+    plt.legend()
+    st.pyplot(fig)
+
+#________________________________________
 mask_rural = data_df["type_urban_rural"] > 1
 data_df['skeptic_and_rural'] = np.select([mask_vaccine_skeptice, mask_rural],
                                          [data_df['vaccine_skeptic'],
